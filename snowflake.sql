@@ -1,63 +1,62 @@
-CREATE DATABASE IF NOT EXISTS CINEFLOW_DW;
+create database if not exists cineflow_dw;
 
-CREATE SCHEMA IF NOT EXISTS CINEFLOW_DW.RAW;
-CREATE SCHEMA IF NOT EXISTS CINEFLOW_DW.STAGING;
-CREATE SCHEMA IF NOT EXISTS CINEFLOW_DW.ANALYTICS;
+create schema if not exists cineflow_dw.raw;
+create schema if not exists cineflow_dw.staging;
+create schema if not exists cineflow_dw.analytics;
 
-ALTER WAREHOUSE COMPUTE_WH RESUME IF SUSPENDED;
-
+alter warehouse compute_wh resume if suspended;
 
 --------------------------------------------------------------------
-USE DATABASE CINEFLOW_DW;
-USE SCHEMA ANALYTICS;
+use database cineflow_dw;
+use schema analytics;
 
-CREATE OR REPLACE TABLE DIM_USER AS
-SELECT 
+create or replace table dim_user as
+select 
     user_id,
     username,
     contact_num
-FROM CINEFLOW_DW.RAW.USERS;
+from cineflow_dw.raw.users;
 
-
-CREATE OR REPLACE TABLE DIM_MOVIE AS
-SELECT 
+create or replace table dim_movie as
+select 
     movie_id,
     movie_name,
     genre,
     duration,
     avg_ratings
-FROM CINEFLOW_DW.RAW.MOVIES;
+from cineflow_dw.raw.movies;
 
-
-CREATE OR REPLACE TABLE DIM_THEATER AS
-SELECT 
+create or replace table dim_theater as
+select 
     s.screen_id,
     t.theater_id,
     t.theater_name,
     t.city,
     s.num_of_seats
-FROM CINEFLOW_DW.RAW.SCREENS s
-JOIN CINEFLOW_DW.RAW.THEATERS t
-ON s.theater_id = t.theater_id;
+from cineflow_dw.raw.screens s
+join cineflow_dw.raw.theaters t
+on s.theater_id = t.theater_id;
 
-
-CREATE OR REPLACE TABLE FACT_BOOKINGS AS
-SELECT
+create or replace table fact_bookings as
+select
     b.booking_id,
     b.user_id,
     st.movie_id,
     st.screen_id,
     b.num_of_tickets,
     b.total_amount,
-    CAST(TO_TIMESTAMP(b.booking_time) AS DATE) AS booking_date,
-    EXTRACT(MONTH FROM TO_TIMESTAMP(b.booking_time)) AS booking_month,
-    DAYNAME(TO_TIMESTAMP(b.booking_time)) AS booking_dow
-FROM CINEFLOW_DW.RAW.BOOKINGS b
-JOIN CINEFLOW_DW.RAW.SHOWTIME st
-ON b.show_id = st.show_id;
+    cast(to_timestamp(b.booking_time) as date) as booking_date,
+    extract(month from to_timestamp(b.booking_time)) as booking_month,
+    dayname(to_timestamp(b.booking_time)) as booking_dow
+from cineflow_dw.raw.bookings b
+join cineflow_dw.raw.showtime st
+on b.show_id = st.show_id;
 
----------------------------------------------
-CREATE OR REPLACE STREAM STR_BOOKINGS
-ON TABLE CINEFLOW_DW.RAW.BOOKINGS;
+---------------------------------------------stream
+-- Create a Snowake Stream called STR_BOOKINGS on STAGING.BOOKINGS that tracks any new rows 
+-- inserted after each ETL run. Write a SELECT * FROM STR_BOOKINGS to see what the stream captures. 
 
-SELECT * FROM STR_BOOKINGS;
+create or replace stream str_bookings
+on table cineflow_dw.raw.bookings;
+
+select * from str_bookings;
